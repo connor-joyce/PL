@@ -18,8 +18,35 @@ substitute x y lst
   |(x == (head lst)) = ([y] ++ (substitute x y (tail lst)))
   |otherwise = ([(head lst)] ++ (substitute x y (tail lst)))
 
---mergeSorted3::(Ord a) => [a] -> [a] ->[a] ->[a]
---TODO
+mergeSorted3::(Ord a) => [a] -> [a] ->[a] ->[a]
+mergeSorted3 [] [] [] = []
+
+mergeSorted3 l1 [] [] = l1
+mergeSorted3 [] l2 [] = l2
+mergeSorted3 [] [] l3 = l3
+
+mergeSorted3 (x:xs) (y:ys) []
+  |(x <= y) = x : mergeSorted3 xs (y:ys) []
+  |(y < x) = y : mergeSorted3 (x:xs) ys []
+
+
+mergeSorted3 (x:xs) [] (y:ys)
+  |(x <= y) = x : mergeSorted3 xs [] (y:ys)
+  |(y < x) = y : mergeSorted3 (x:xs) [] ys
+
+
+mergeSorted3 [] (x:xs) (y:ys)
+  |(x <= y) = x : mergeSorted3 [] xs (y:ys)
+  |(y < x) = y : mergeSorted3 [] (x:xs) ys
+
+
+
+mergeSorted3 (x:xs) (y:ys) (z:zs)
+  |(x <= y) && (x <= z) = x : mergeSorted3 xs (y:ys) (z:zs)
+  |(z <= y) && (z <= x) = z : mergeSorted3 (x:xs) (y:ys) zs
+  |(y <= x) && (y <= z) = y : mergeSorted3 (x:xs) ys (z:zs)
+
+
 
 data TriTree a = EmptyNode | TriNode a (TriTree a) (TriTree a) (TriTree a)
   deriving Show
@@ -52,6 +79,11 @@ inTree _ EmptyNode = False
 inTree n (TriNode v l m r)
   |(n == v) = True
   |otherwise = ((inTree n l) || (inTree n m) || (inTree n r))
+
+leafList :: TriTree a -> [a]
+leafList EmptyNode = [];
+leafList (TriNode v EmptyNode EmptyNode EmptyNode) = [v]
+leafList (TriNode v l m r) = ((leafList l) ++ (leafList m) ++ (leafList r))
 
 inOrderMap :: (a->b) -> TriTree a -> TriTree b
 inOrderMap _ EmptyNode = EmptyNode
