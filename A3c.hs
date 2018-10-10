@@ -1,6 +1,8 @@
 module A3c where
+
 import Data.Char
 import Data.Maybe
+import Control.Monad
 
 onlyLowercase::[[Char]] -> [[Char]]
 onlyLowercase [] = []
@@ -36,7 +38,7 @@ longestStringHelper f (x:xs) =
 longestLowerCase:: [String] -> String
 longestLowerCase [] = ""
 longestLowerCase (x:xs) =
-  (longestString . onlyLowercase) (x:xs)
+  (longestString3 . onlyLowercase) (x:xs)
 
 revStringRev:: String -> String
 revStringRev "" = ""
@@ -45,21 +47,27 @@ revStringRev (x:xs) =
 
 revStringHelper [] = []
 revStringHelper (x:xs)
-  | isLower x = (toUpper x) : revStringHelper xs
-  |otherwise = (toLower x) : revStringHelper xs
+  | isUpper x = (toLower x) : revStringHelper xs
+  |otherwise = x : revStringHelper xs
 
 firstAnswer:: (a->Maybe b) -> [a] -> Maybe b
 firstAnswer _ [] = Nothing
-firstAnswer p (x:xs) =
-  if(isJust (p x)) then (p x) else firstAnswer p xs
+firstAnswer p (x:xs)
+  |(isJust (p x)) = (p x)
+  |(isNothing (p x)) = firstAnswer p xs
+  |otherwise = firstAnswer p xs
+  --if(isJust (p x)) then (p x) else firstAnswer p xs
 
---no fucking clue
---allAnswers::(a->Maybe [b]) -> [a] -> Maybe [b]
---allAnswers _ [] = []
---allAnswers p (x:xs) =
-  --if(isJust (p x)) then (Just (p x))++(allAnswers p xs) else Nothing
+--is creating [Maybe [b]] instead of Maybe [b] where are lists
+allAnswers::(a->Maybe [b]) -> [a] -> Maybe [b]
+allAnswers _ [] = Nothing
+allAnswers p (x:xs) = allAnswersHelper p (Just []) (x:xs)
 
---allAnswersHelper a acc
+allAnswersHelper::(a->Maybe[b]) -> Maybe[b] -> [a] -> Maybe[b]
+allAnswersHelper a acc [] = acc
+allAnswersHelper a acc (x:xs)
+  |(isNothing (a x)) = Nothing
+  |otherwise = allAnswersHelper a (mappend  acc (a x)) xs
 
 data Pattern = WildcardPat | VariablePat (String) | UnitPat | ConstantPat (Int) | ConstructorPat (String, Pattern) | TuplePat ([Pattern]) deriving (Eq, Show)
 data Value = Constant (Int) | Unit | Constructor (String, Value) | Tuple [Value] deriving (Eq, Show)
@@ -72,6 +80,7 @@ data Value = Constant (Int) | Unit | Constructor (String, Value) | Tuple [Value]
 --anything else it returns 0
 
 --g takes a pattern and returns a value
+--only uses specific functions based on what pattern it is given
 g f1 f2 pat =
  let
    r = g f1 f2
@@ -93,12 +102,23 @@ countWildAndVariableLengths p = g (\ x -> 1) (length) p
 countAVar:: (String, Pattern) -> Int
 countAVar (s, p) = g (\x -> 0) (\x -> if(s == x) then 1 else 0) p
 
---no fucking clue
---checkPat:: Pattern -> Boolean
---checkPat p =
---
---checkPatHelperStringList:: Pattern -> [String]
---checkPatHelperStringList p =
+
+checkPat:: Pattern -> Bool
+checkPat p = (checkRepeats . checkPatHelperStringList) p
+
+checkPatHelperStringList:: Pattern -> [String]
+checkPatHelperStringList p =
+    case p of
+      VariablePat x -> [x]
+      ConstructorPat (x, _) -> [x]
+      TuplePat val -> foldl (\x y -> (checkPatHelperStringList y) ++ x) [] val
+      _ -> []
+
+checkRepeats:: [String] -> Bool
+checkRepeats [] = True
+checkRepeats (x:xs)
+  |(x `elem` xs) = False
+  |otherwise = checkRepeats xs
 --
 --no fucking clue
 --match:: (Value, Pattern) -> Maybe [(String, Value)]
@@ -108,4 +128,4 @@ countAVar (s, p) = g (\x -> 0) (\x -> if(s == x) then 1 else 0) p
 --match((Constant v), (ConstantPat v2)) = if (v == v2) then Just [] else Nothing
 --match((Tuple (v:vs)), (TuplePat (p:ps))) = Just
 
---firstMatch to afraid to try 
+--firstMatch to afraid to try
